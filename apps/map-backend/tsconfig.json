@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "files": [],
+  "include": [],
+  "references": [
+    {
+      "path": "../../libs/constants"
+    },
+    {
+      "path": "../../libs/utils"
+    },
+    {
+      "path": "../../libs/types"
+    },
+    {
+      "path": "../../libs/db"
+    },
+    {
+      "path": "./tsconfig.app.json"
+    }
+  ]
+}

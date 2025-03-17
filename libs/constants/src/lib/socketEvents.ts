@@ -1,0 +1,22 @@
+export const SOCKET_EVENTS = {
+  CONNECTION: "connection",
+  GET_CURRENT_DRAWINGS: "get-current-drawings",
+  USER_JOIN: "user-join",
+  USER_ACTIVITY: "user-activity",
+  REQUEST_INITIAL_DATA: "request-initial-data",
+  DRAWING_UPDATE: "drawing-update",
+  GET_ALL_LAYERS: "get-all-layers",
+  CREATE_LAYER: "create-layer",
+  UPDATE_LAYER: "update-layer",
+  DELETE_LAYER: "delete-layer",
+  GET_ALL_POLYGONS: "get-all-polygons",
+  GET_POLYGONS_BY_LAYER: "get-polygons-by-layer",
+  EDITING_POLYGON: "editing-polygon",
+  POLYGON_COORDINATES_UPDATE: "polygon-coordinates-update",
+  SAVE_POLYGON: "save-polygon",
+  CALCULATE_AREA: "calculate-area",
+  UPDATE_POLYGON: "update-polygon",
+  DELETE_POLYGON: "delete-polygon",
+  MAP_BOUNDS: "map-bounds",
+  DISCONNECT: "disconnect"
+};

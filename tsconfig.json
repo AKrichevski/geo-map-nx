@@ -2,5 +2,30 @@
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
   "files": [],
-  "references": []
+  "references": [
+    {
+      "path": "./apps/map-client"
+    },
+    {
+      "path": "./map-backend-e2e"
+    },
+    {
+      "path": "./apps/map-backend"
+    },
+    {
+      "path": "./libs/db"
+    },
+    {
+      "path": "./libs/types"
+    },
+    {
+      "path": "./libs/utils"
+    },
+    {
+      "path": "./libs/constants"
+    },
+    {
+      "path": "./libs/frontend-utils"
+    }
+  ]
 }
