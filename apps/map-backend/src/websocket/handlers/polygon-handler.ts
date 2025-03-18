@@ -133,14 +133,7 @@ export const setupPolygonHandler = (socket: Socket, state: SocketHandlerState): 
         }
       }
 
-      let closedCoords = [...data.coordinates];
-      const firstPoint = data.coordinates[0];
-      const lastPoint = data.coordinates[data.coordinates.length - 1];
-
-      if (firstPoint[0] !== lastPoint[0] || firstPoint[1] !== lastPoint[1]) {
-        closedCoords.push(firstPoint);
-      }
-
+      const closedCoords = [...data.coordinates];
       const areaResult = calculatePolygonArea(closedCoords);
 
       console.log(`Area calculation for polygon with ${closedCoords.length} points: ${areaResult.value} ${areaResult.unit}`);
