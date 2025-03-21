@@ -50,8 +50,8 @@ LOG_LEVEL=info
 4. Create a `.env` file in the root directory of `map-client` with the following variables:
 ```
 VITE_MAPBOX_API_KEY=your_mapbox_api_key
-VITE_API_BASE_URL=http://localhost:8080
-VITE_SOCKET_URL=http://localhost:8080
+VITE_API_BASE_URL=http://localhost:3333
+VITE_SOCKET_URL=http://localhost:3333
 ```
 
 You'll need to create a Mapbox account and get an API key from [Mapbox](https://www.mapbox.com/).
