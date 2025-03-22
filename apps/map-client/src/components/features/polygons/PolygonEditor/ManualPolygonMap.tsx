@@ -7,6 +7,7 @@ import MapStyleSwitcher from '../../../styledComponents/MapStyleSwitcher';
 import { MapContainer } from '../../../styledComponents/backgroundMapStyles';
 import { MapCanvasOverlay, MapDiv } from '../../../styledComponents/polygonEditor/manualPolygonMapStyles';
 import { MouseCoordinates } from '../../../common/MouseCoordinates';
+import { useSocket } from '../../../../hooks';
 
 const mapboxToken = import.meta.env.VITE_MAPBOX_API_KEY;
 if (mapboxToken) {
@@ -18,7 +19,6 @@ export interface ManualPolygonMapProps {
   onPointsChange: (newPoints: [number, number][]) => void;
   updatePoints: (newPoints: [number, number][]) => void;
   strokeColor?: string;
-  initialCenter?: [number, number] | null;
 }
 
 export const ManualPolygonMap: React.FC<ManualPolygonMapProps> = ({
@@ -26,7 +26,6 @@ export const ManualPolygonMap: React.FC<ManualPolygonMapProps> = ({
                                                                     onPointsChange,
                                                                     updatePoints,
                                                                     strokeColor = '#3388ff',
-                                                                    initialCenter = null
                                                                   }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const [mapInstance, setMapInstance] = useState<Map | null>(null);
@@ -40,14 +39,30 @@ export const ManualPolygonMap: React.FC<ManualPolygonMapProps> = ({
   const [mouseCoordinates, setMouseCoordinates] = useState<{ lng: number; lat: number } | null>(null);
 
   const { mapInstance: mainMapInstance, mapStyle, setMapStyle } = useMapContext();
+  const activeUserCoordinates = useRef<[number, number] | null>(null);
+
+  const { subscribe } = useSocket();
+
+  const handleUsersUpdated = useCallback((users: any[])=>{
+    const activeUser = users.find(user => user.activity && user.activity.coordinates);
+    if (activeUser && activeUser.activity && activeUser.activity.coordinates) {
+      activeUserCoordinates.current = activeUser.activity.coordinates;
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!subscribe) return;
+    return subscribe('users-updated', handleUsersUpdated);
+  }, [subscribe]);
 
   const bounds = getBoundsFromCoordinates(points)
 
   useEffect(() => {
     if (!mapContainerRef.current || mapInstance) return;
     let center;
-    if (initialCenter && initialCenter.length === 2) {
-      center = initialCenter;
+
+    if (activeUserCoordinates?.current && activeUserCoordinates?.current?.length === 2) {
+      center = activeUserCoordinates.current;
     } else if (points && points.length > 0) {
       center = points[0];
     } else {

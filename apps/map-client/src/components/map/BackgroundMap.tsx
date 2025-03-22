@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useLayers, useMapInstance, useSocket } from '../../hooks';
+import { useLayers, useMapInstance } from '../../hooks';
 import { BaseMap } from './BaseMap';
 import { CanvasOverlay } from './Overlays/CanvasOverlay';
 import { MapTooltipLayer } from './Overlays/MapTooltipLayer';
-import { RealtimeDrawingOverlay } from './Overlays/RealtimeDrawingOverlay';
 import { useCanvasDrawingAllPolygons } from '../../hooks';
-import socketService from '../../services/socket';
 import { MAPBOX_CONFIG } from '../../config/config';
 import { useMapContext } from '../../contexts/MapContext';
 import MapStyleSwitcher from '../styledComponents/MapStyleSwitcher';
@@ -24,7 +22,6 @@ const BackgroundMap: React.FC<BackgroundMapProps> = ({
                                                          selectedUserId = null
                                                      }) => {
     const { polygons } = useLayers();
-    const { isConnected } = useSocket();
     const { mapStyle, setMapStyle } = useMapContext();
 
     const { mapContainerRef, mapInstance } = useMapInstance({
@@ -39,19 +36,6 @@ const BackgroundMap: React.FC<BackgroundMapProps> = ({
     const [showJumpInput, setShowJumpInput] = useState(false);
     const [coordinates, setCoordinates] = useState({ lng: '', lat: '' });
     const [mouseCoordinates, setMouseCoordinates] = useState<{ lng: number; lat: number } | null>(null);
-    const [activeUsers, setActiveUsers] = useState<string[]>([]);
-    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-
-    useEffect(() => {
-        const socket = socketService.getSocket();
-        if (socket) {
-            setCurrentUserId(socket.id);
-        }
-
-        return () => {
-            setCurrentUserId(null);
-        };
-    }, [isConnected]);
 
     useEffect(() => {
         if (mapInstance) {
@@ -138,15 +122,6 @@ const BackgroundMap: React.FC<BackgroundMapProps> = ({
       <MapContainer>
           <BaseMap mapContainerRef={mapContainerRef}>
               <CanvasOverlay canvasRef={canvasRef} />
-
-              {mapInstance && (
-                <RealtimeDrawingOverlay
-                  mapInstance={mapInstance}
-                  selectedUserId={selectedUserId}
-                  currentUserId={currentUserId}
-                  hideDrawingInProgress={true}
-                />
-              )}
 
               {mapInstance && (
                 <MapTooltipLayer

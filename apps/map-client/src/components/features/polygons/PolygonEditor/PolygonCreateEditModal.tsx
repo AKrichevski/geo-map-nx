@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { DraggableModal } from "../../../common/Modal/DraggableModal";
 import { ManualPolygonMap } from "./ManualPolygonMap";
 import { PolygonModalHeader } from "./PolygonModalHeader";
@@ -15,13 +15,11 @@ import {
 export interface PolygonCreateEditModalProps {
   onClose: () => void;
   editPolygonId?: number | null;
-  initialCenter?: [number, number] | null;
 }
 
 export const PolygonCreateEditModal: React.FC<PolygonCreateEditModalProps> = ({
                                                                                 onClose,
                                                                                 editPolygonId = null,
-                                                                                initialCenter = null
                                                                               }) => {
   const { selectedLayerId, createPolygon, updatePolygon, polygons } = useLayers();
   const { socket } = useSocket();
@@ -34,9 +32,6 @@ export const PolygonCreateEditModal: React.FC<PolygonCreateEditModalProps> = ({
   const [estimatedAreaValue, setEstimatedAreaValue] = useState<number | null>(null);
   const [estimatedAreaUnit, setEstimatedAreaUnit] = useState<MEASURE_NAMES>(MEASURE_NAMES.SQUARE_KILOMETER);
   const [isCalculatingArea, setIsCalculatingArea] = useState<boolean>(false);
-  const initialCenterRef = useRef<[number, number] | null>(null);
-
-  console.log("render PolygonCreateEditModal ", editPolygonId ? "editing" : "creating")
 
   useEffect(() => {
     return () => {
@@ -52,11 +47,6 @@ export const PolygonCreateEditModal: React.FC<PolygonCreateEditModalProps> = ({
         socketService.setUserActivity(null);
     };
   }, []);
-
-  useEffect(() => {
-    initialCenterRef.current = initialCenter;
-  }, [initialCenter]);
-
 
   useEffect(() => {
     if (editPolygonId) {
@@ -371,7 +361,6 @@ export const PolygonCreateEditModal: React.FC<PolygonCreateEditModalProps> = ({
             onPointsChange={handleNewPoint}
             updatePoints={updatePoints}
             strokeColor={color}
-            initialCenter={initialCenterRef.current}
           />
         </MapSection>
 

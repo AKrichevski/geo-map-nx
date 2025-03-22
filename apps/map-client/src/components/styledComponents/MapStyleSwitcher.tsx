@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { FaMap } from 'react-icons/fa';
 import colors from '../../consts/colors';
@@ -91,7 +91,7 @@ export const MapStyleSwitcher: React.FC<MapStyleSwitcherProps> = ({
                                                                     currentStyle,
                                                                     onStyleChange
                                                                   }) => {
-  const [showOptions, setShowOptions] = React.useState(false);
+  const [showOptions, setShowOptions] = useState(false);
 
   const toggleOptions = () => {
     setShowOptions(!showOptions);
