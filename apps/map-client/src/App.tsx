@@ -21,8 +21,8 @@ function AppWithoutContext() {
         const socket = await socketService.connectAndWait(5000);
 
         if (socket && socket.connected && !initialDataRequestedRef.current) {
-          socketService.requestInitialData();
           initialDataRequestedRef.current = true;
+          await socketService.requestInitialData();
         }
       } catch (err) {
         // Silently handle socket initialization error

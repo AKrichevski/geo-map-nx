@@ -1,6 +1,7 @@
 import { Socket } from 'socket.io-client';
 import Dexie from 'dexie';
 import { LayerData, PolygonData } from '@geo-map-app/types';
+import socketService from '../services/socket';
 
 export class DbSyncManager {
   private socket: Socket | null = null;
@@ -54,17 +55,11 @@ export class DbSyncManager {
     try {
       await this.queueSyncOperation(async () => {
         try {
-          this.socket!.emit('request-initial-data');
+          const initialData = await socketService.requestInitialData();
 
-          const initialData = await new Promise<{layers: any[], polygons: any[]}>((resolve, reject) => {
-            this.socket!.once('initial-data', (data) => {
-              resolve(data);
-            });
-
-            setTimeout(() => {
-              reject(new Error('Timeout waiting for initial data'));
-            }, 10000);
-          });
+          if (!initialData) {
+            return;
+          }
 
           if (initialData.layers && initialData.layers.length > 0) {
             await this.syncLayers(initialData.layers);
@@ -119,38 +114,6 @@ export class DbSyncManager {
     if (nextOperation) {
       nextOperation();
     }
-  }
-
-  private async fetchLayers(): Promise<LayerData[]> {
-    if (!this.socket) {
-      throw new Error('Socket not initialized');
-    }
-
-    return new Promise<LayerData[]>((resolve, reject) => {
-      this.socket!.emit('get-all-layers', {}, (response: { layers?: LayerData[], error?: string }) => {
-        if (response.error) {
-          reject(new Error(response.error));
-        } else {
-          resolve(response.layers || []);
-        }
-      });
-    });
-  }
-
-  private async fetchPolygons(): Promise<PolygonData[]> {
-    if (!this.socket) {
-      throw new Error('Socket not initialized');
-    }
-
-    return new Promise<PolygonData[]>((resolve, reject) => {
-      this.socket!.emit('get-all-polygons', {}, (response: { polygons?: PolygonData[], error?: string }) => {
-        if (response.error) {
-          reject(new Error(response.error));
-        } else {
-          resolve(response.polygons || []);
-        }
-      });
-    });
   }
 
   private async syncLayers(layers: LayerData[]): Promise<void> {
@@ -248,42 +211,16 @@ export class DbSyncManager {
 
   async createLayer(layer: Omit<LayerData, 'id'>): Promise<LayerData> {
     if (!this.socket) {
-      // Offline mode - create only in IndexedDB
       const id = await this.db.table('layers').add(layer);
       const newLayer = { ...layer, id } as LayerData;
       return newLayer;
     }
 
-    // Online mode - create on server
     return new Promise<LayerData>((resolve, reject) => {
       this.socket!.emit('create-layer', layer, async (response: { layer?: LayerData, error?: string }) => {
         if (response.error) {
           reject(new Error(response.error));
         } else if (response.layer) {
-          // Add to IndexedDB
-          await this.syncLayer(response.layer);
-          resolve(response.layer);
-        } else {
-          reject(new Error('No layer returned from server'));
-        }
-      });
-    });
-  }
-
-  async updateLayer(layerId: number, updates: Partial<LayerData>): Promise<LayerData> {
-    if (!this.socket) {
-      // Offline mode - update only in IndexedDB
-      await this.db.table('layers').update(layerId, updates);
-      const updatedLayer = await this.db.table('layers').get(layerId) as LayerData;
-      return updatedLayer;
-    }
-
-    return new Promise<LayerData>((resolve, reject) => {
-      this.socket!.emit('update-layer', { layerId, updates }, async (response: { layer?: LayerData, error?: string }) => {
-        if (response.error) {
-          reject(new Error(response.error));
-        } else if (response.layer) {
-          // Update in IndexedDB
           await this.syncLayer(response.layer);
           resolve(response.layer);
         } else {

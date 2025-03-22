@@ -1,4 +1,3 @@
-// src/services/socket.ts
 import { io, Socket } from 'socket.io-client';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
@@ -14,6 +13,8 @@ class SocketService {
   private currentActivity: any = null;
   private initialDataRequested = false;
   private requestingInitialData = false;
+  private initialDataResponse: any = null;
+  private initialDataSubscribers: Array<(data: any) => void> = [];
   private drawingsInProgress: Set<string> = new Set();
   private userJoinSent = false;
   private clearActivityDebounceTimer: NodeJS.Timeout | null = null;
@@ -61,7 +62,6 @@ class SocketService {
       this.socket.on('disconnect', this.handleDisconnect.bind(this));
       this.socket.on('connect_error', this.handleError.bind(this));
 
-      // Listen to all regular socket events to forward them to listeners
       this.setupSocketEventForwarding();
 
       return this.socket;
@@ -71,7 +71,6 @@ class SocketService {
     }
   }
 
-  // Set up forwarding for all socket events to our listeners
   private setupSocketEventForwarding(): void {
     if (!this.socket) return;
 
@@ -81,13 +80,10 @@ class SocketService {
       'users-updated', 'user-activity', 'initial-data'
     ];
 
-    // Attach listeners for all events
     events.forEach(eventName => {
       this.socket?.on(eventName, (data: any) => {
-        // Forward the event to all listeners
         this.notifyListeners(eventName, data);
 
-        // Additional logic for drawing tracking
         if (eventName === 'drawing-update' && data && data.userId) {
           if (!data.isCompleted) {
             this.drawingsInProgress.add(data.userId);
@@ -111,15 +107,9 @@ class SocketService {
   private handleConnect(): void {
     this.connecting = false;
 
-    // Only send user-join once per session to avoid duplicate users
     if (!this.userJoinSent) {
       this.socket?.emit('user-join', { username: this.username });
       this.userJoinSent = true;
-    }
-
-    // Only request initial data once
-    if (!this.initialDataRequested && !this.requestingInitialData) {
-      this.requestInitialData();
     }
 
     this.notifyListeners('connect');
@@ -127,8 +117,15 @@ class SocketService {
 
   private handleDisconnect(): void {
     this.notifyListeners('disconnect');
+    this.resetInitialDataState();
+    this.drawingsInProgress.clear();
+  }
+
+  public resetInitialDataState(): void {
+    this.initialDataRequested = false;
     this.requestingInitialData = false;
-    this.drawingsInProgress.clear(); // Clear in-progress drawings on disconnect
+    this.initialDataResponse = null;
+    this.initialDataSubscribers = [];
   }
 
   private handleError(error: any): void {
@@ -172,8 +169,7 @@ class SocketService {
       this.socket = null;
       this.connectionAttempts = 0;
       this.eventListeners.clear();
-      this.initialDataRequested = false;
-      this.requestingInitialData = false;
+      this.resetInitialDataState();
       this.drawingsInProgress.clear();
       this.userJoinSent = false;
     }
@@ -194,16 +190,13 @@ class SocketService {
   public emit(event: string, data?: any): void {
     const socket = this.getSocket();
     if (socket) {
-      // Special handling for drawing events
       if (event === 'drawing-update' && data) {
-        // Track our own drawings
         if (!data.isCompleted) {
           this.drawingsInProgress.add(socket.id);
         } else {
           this.drawingsInProgress.delete(socket.id);
         }
       } else if (event === 'drawing-ended') {
-        // Clear our drawing state
         if (data && data.userId) {
           this.drawingsInProgress.delete(data.userId);
         } else {
@@ -215,27 +208,47 @@ class SocketService {
     }
   }
 
-  public requestInitialData(): void {
+  public requestInitialData(): Promise<any> {
     const socket = this.getSocket();
 
-    if (socket && socket.connected && !this.initialDataRequested && !this.requestingInitialData) {
-      this.requestingInitialData = true;
+    if (this.initialDataResponse) {
+      return Promise.resolve(this.initialDataResponse);
+    }
 
-      socket.emit('request-initial-data');
-
-      // Set a timeout to reset the request flag if we don't get a response
-      setTimeout(() => {
-        if (this.requestingInitialData) {
-          this.requestingInitialData = false;
-        }
-      }, 5000);
-
-      // Listen for the initial data response - only process it once
-      socket.once('initial-data', (data) => {
-        this.initialDataRequested = true;
-        this.requestingInitialData = false;
+    if (this.requestingInitialData) {
+      return new Promise((resolve) => {
+        this.initialDataSubscribers.push(resolve);
       });
     }
+
+    if (socket && socket.connected && !this.initialDataRequested) {
+      this.requestingInitialData = true;
+
+      return new Promise((resolve) => {
+        this.initialDataSubscribers.push(resolve);
+
+        const timeoutId = setTimeout(() => {
+          if (this.requestingInitialData) {
+            this.requestingInitialData = false;
+            this.initialDataSubscribers.forEach(sub => sub(null));
+            this.initialDataSubscribers = [];
+          }
+        }, 10000);
+
+        socket.once('initial-data', (data) => {
+          clearTimeout(timeoutId);
+          this.initialDataRequested = true;
+          this.requestingInitialData = false;
+          this.initialDataResponse = data;
+          this.initialDataSubscribers.forEach(sub => sub(data));
+          this.initialDataSubscribers = [];
+        });
+
+        socket.emit('request-initial-data');
+      });
+    }
+
+    return Promise.resolve(null);
   }
 
   public setUserActivity(activity: {
@@ -246,10 +259,8 @@ class SocketService {
     const socket = this.getSocket();
     if (!socket || !socket.connected) return;
 
-    // Update local state
     this.currentActivity = activity;
 
-    // Debounce activity clearing to prevent multiple identical messages
     if (activity === null) {
       if (this.clearActivityDebounceTimer) {
         clearTimeout(this.clearActivityDebounceTimer);
@@ -274,10 +285,6 @@ class SocketService {
     }
   }
 
-  /**
-   * Notify when a new point is added to the drawing
-   * @param point New point coordinates [lng, lat]
-   */
   public addDrawingPoint(point: [number, number]): void {
     this.notifyPointChange('add', undefined, point);
   }
@@ -297,37 +304,16 @@ class SocketService {
     });
   }
 
-  /**
-   * Clear any current drawing in progress
-   */
   public clearDrawing(): void {
     const socket = this.getSocket();
     if (!socket) return;
 
-    // Only send if we have a drawing in progress to avoid unnecessary messages
     if (this.drawingsInProgress.has(socket.id)) {
       socket.emit('drawing-ended', { userId: socket.id });
       this.drawingsInProgress.delete(socket.id);
     }
 
-    // Clear activity as well, but use our debounced method
     this.setUserActivity(null);
-  }
-
-  /**
-   * Check if a user has a drawing in progress
-   * @param userId The user ID to check
-   * @returns True if the user has a drawing in progress
-   */
-  public isDrawingInProgress(userId: string): boolean {
-    return this.drawingsInProgress.has(userId);
-  }
-
-  /**
-   * Get the current user's socket ID
-   */
-  public getCurrentUserId(): string | null {
-    return this.socket?.id || null;
   }
 }
 
