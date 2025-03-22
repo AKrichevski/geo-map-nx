@@ -59,5 +59,3 @@ export const useSocket = <T = any>(eventName?: string, initialState?: T) => {
     subscribe
   };
 };
-
-export default useSocket;

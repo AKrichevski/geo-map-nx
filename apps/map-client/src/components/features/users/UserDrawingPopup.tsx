@@ -6,7 +6,6 @@ import { useSocket } from '../../../hooks';
 import { useMapContext } from '../../../contexts/MapContext';
 import { DrawingData } from '@geo-map-app/types';
 import colors from '../../../consts/colors';
-import socketService from '../../../services/socket';
 import MapStyleSwitcher from '../../styledComponents/MapStyleSwitcher';
 import {
   CloseButton, DrawingInfoOverlay,
@@ -19,13 +18,11 @@ import {
 
 interface UserDrawingPopupProps {
   user: ActiveUser;
-  isOpen: boolean;
   onClose: () => void;
 }
 
 export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
                                                                     user,
-                                                                    isOpen,
                                                                     onClose,
                                                                   }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -81,7 +78,7 @@ export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
   }, [user.activity]);
 
   useEffect(() => {
-    if (!isOpen || !socket) return;
+    if (!socket) return;
     if (isEditingPolygon && user.activity?.polygonId) {
       const handlePolygonCoordinateUpdate = (data: {
         polygonId: number,
@@ -113,11 +110,9 @@ export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
         clearInterval(pollingInterval);
       };
     }
-  }, [isOpen, user.id, socket, user.activity, isEditingPolygon, subscribe]);
+  }, [user.id, socket, user.activity, isEditingPolygon, subscribe]);
 
   useEffect(() => {
-    if (!isOpen) return;
-
     const handleDrawingUpdate = (data: DrawingData) => {
       if (!data || data.userId !== user.id) return;
 
@@ -173,7 +168,7 @@ export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
       drawingPointChangedUnsubscribe();
       drawingEndedUnsubscribe();
     };
-  }, [isOpen, user.id, mapInstance, subscribe, socket, initialCenter, lastUpdateTime]);
+  }, [user.id, mapInstance, subscribe, socket, initialCenter, lastUpdateTime]);
 
   const drawUserDrawing = useCallback(() => {
     if (!canvasRef.current || !mapInstance) return;
@@ -187,15 +182,12 @@ export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (isEditingPolygon && polygonCoordinates && polygonCoordinates.length > 0) {
-      // Generate a color
       const drawingColor = `hsl(200, 80%, 50%)`;
 
       try {
-        // Draw each point with number
         polygonCoordinates.forEach((point, index) => {
           const pos = mapInstance.project(point);
 
-          // Draw a dot for each point
           ctx.beginPath();
           ctx.arc(pos.x, pos.y, 6, 0, Math.PI * 2);
           ctx.fillStyle = drawingColor;
@@ -203,8 +195,6 @@ export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
           ctx.strokeStyle = colors.white;
           ctx.lineWidth = 2;
           ctx.stroke();
-
-          // Add point number for clarity
           ctx.font = '12px Arial';
           ctx.fillStyle = colors.white;
           ctx.textAlign = 'center';
@@ -212,7 +202,6 @@ export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
           ctx.fillText((index + 1).toString(), pos.x, pos.y);
         });
 
-        // Draw lines if we have at least 2 points
         if (polygonCoordinates.length > 1) {
           ctx.beginPath();
           ctx.strokeStyle = drawingColor;
@@ -226,35 +215,30 @@ export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
             ctx.lineTo(point.x, point.y);
           }
 
-          // Always try to close the polygon visually if we have 3+ points
           if (polygonCoordinates.length >= 3) {
             ctx.lineTo(firstPoint.x, firstPoint.y);
-            ctx.fillStyle = `${drawingColor}33`; // 20% opacity
+            ctx.fillStyle = `${drawingColor}33`;
             ctx.fill();
           }
 
           ctx.stroke();
         }
 
-        return; // Skip the regular drawing logic below
+        return;
       } catch (error) {
         console.error("Error drawing edited polygon:", error);
       }
     }
 
-    // Regular drawing case
     if (!userDrawing || !userDrawing.points || userDrawing.points.length < 1) return;
 
-    // Generate a color for this user
     const hue = ((user.id.charCodeAt(0) || 0) * 137.5) % 360;
     const drawingColor = `hsl(${hue}, 80%, 50%)`;
 
     try {
-      // Draw each point with number
       userDrawing.points.forEach((point, index) => {
         const pos = mapInstance.project(point);
 
-        // Draw a dot for each point
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, 6, 0, Math.PI * 2);
         ctx.fillStyle = drawingColor;
@@ -262,8 +246,6 @@ export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
         ctx.strokeStyle = colors.white;
         ctx.lineWidth = 2;
         ctx.stroke();
-
-        // Add point number for clarity
         ctx.font = '12px Arial';
         ctx.fillStyle = colors.white;
         ctx.textAlign = 'center';
@@ -271,7 +253,6 @@ export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
         ctx.fillText((index + 1).toString(), pos.x, pos.y);
       });
 
-      // Draw lines if we have at least 2 points
       if (userDrawing.points.length > 1) {
         ctx.beginPath();
         ctx.strokeStyle = drawingColor;
@@ -285,26 +266,20 @@ export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
           ctx.lineTo(point.x, point.y);
         }
 
-        // Always try to close the polygon visually if we have 3+ points
         if (userDrawing.points.length >= 3) {
-          // If the drawing is completed, fill the polygon
           if (userDrawing.isCompleted) {
             ctx.lineTo(firstPoint.x, firstPoint.y);
-            ctx.fillStyle = `${drawingColor}33`; // 20% opacity
+            ctx.fillStyle = `${drawingColor}33`;
             ctx.fill();
           } else {
-            // Draw a dashed line back to the first point to indicate
-            // what the closed polygon would look like
             const lastPoint = mapInstance.project(userDrawing.points[userDrawing.points.length - 1]);
-            ctx.stroke(); // Finish the solid line first
-
-            // Now draw the dashed line back to start
+            ctx.stroke();
             ctx.beginPath();
-            ctx.setLineDash([5, 5]); // Set dashed line pattern
+            ctx.setLineDash([5, 5]);
             ctx.moveTo(lastPoint.x, lastPoint.y);
             ctx.lineTo(firstPoint.x, firstPoint.y);
             ctx.stroke();
-            ctx.setLineDash([]); // Reset to solid line
+            ctx.setLineDash([]);
           }
         } else {
           ctx.stroke();
@@ -315,9 +290,8 @@ export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
     }
   }, [mapInstance, userDrawing, user.id, isEditingPolygon, polygonCoordinates]);
 
-  // Set up animation loop
   useEffect(() => {
-    if (!mapInstance || !isOpen) return;
+    if (!mapInstance) return;
 
     const animate = () => {
       drawUserDrawing();
@@ -326,7 +300,6 @@ export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
 
     animationFrameRef.current = requestAnimationFrame(animate);
 
-    // Handle map movement and zoom
     const handleMapChange = () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -344,9 +317,8 @@ export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
       mapInstance.off('move', handleMapChange);
       mapInstance.off('zoom', handleMapChange);
     };
-  }, [mapInstance, drawUserDrawing, isOpen]);
+  }, [drawUserDrawing]);
 
-  // Handle resize events
   useEffect(() => {
     const handleResize = () => {
       if (canvasRef.current) {
@@ -360,25 +332,19 @@ export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, [drawUserDrawing]);
 
-  // Fit the map to show all points when drawing updates
   useEffect(() => {
     if (!mapInstance) return;
 
-    // Handle polygon editing case
     if (isEditingPolygon && polygonCoordinates && polygonCoordinates.length >= 2) {
       try {
-        // Calculate bounds
         const bounds = new mapboxgl.LngLatBounds();
-
-        // Extend bounds with each point
         polygonCoordinates.forEach(point => {
           bounds.extend(point);
         });
 
-        // Add some padding
         mapInstance.fitBounds(bounds, {
           padding: 50,
-          duration: 0 // Immediate, no animation
+          duration: 0
         });
       } catch (err) {
         // Silently handle any errors with bounds
@@ -386,21 +352,17 @@ export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
       return;
     }
 
-    // Regular drawing case
     if (userDrawing && userDrawing.points && userDrawing.points.length >= 2) {
       try {
-        // Calculate bounds
         const bounds = new mapboxgl.LngLatBounds();
 
-        // Extend bounds with each point
         userDrawing.points.forEach(point => {
           bounds.extend(point);
         });
 
-        // Add some padding
         mapInstance.fitBounds(bounds, {
           padding: 50,
-          duration: 0 // Immediate, no animation
+          duration: 0
         });
       } catch (err) {
         // Silently handle any errors with bounds
@@ -414,7 +376,6 @@ export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
 
   return (
     <DraggableModal
-      isOpen={isOpen}
       isResizable={true}
       defaultWidth="600px"
       defaultHeight="400px"
@@ -433,7 +394,6 @@ export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
         <div ref={mapContainerRef} style={{ position: 'absolute', inset: 0 }}></div>
         <MapCanvas ref={canvasRef} />
 
-        {/* Add Map Style Switcher */}
         {mapInstance && (
           <MapStyleSwitcher
             currentStyle={mapStyle}
@@ -467,5 +427,3 @@ export const UserDrawingPopup: React.FC<UserDrawingPopupProps> = ({
     </DraggableModal>
   );
 };
-
-export default UserDrawingPopup;

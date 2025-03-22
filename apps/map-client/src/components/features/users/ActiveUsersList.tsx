@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FiUser, FiMapPin, FiEye } from 'react-icons/fi';
+import { FiUser, FiEye } from 'react-icons/fi';
 import { useSocket } from '../../../hooks';
-import { useMapContext } from '../../../contexts/MapContext';
 import { ActiveUser } from '@geo-map-app/types';
 import { UserDrawingPopup } from './UserDrawingPopup';
 import colors from '../../../consts/colors';
@@ -15,22 +14,15 @@ import {
 } from '../../styledComponents/activeUsersStyles';
 
 interface ActiveUsersListProps {
-  className?: string;
-  setEditPolygonId: (id: number | null) => void;
-  setShowCreatePolygonModal: (show: boolean) => void;
   setSelectedUserId: (userId: string | null) => void;
 }
 
 const ActiveUsersList: React.FC<ActiveUsersListProps> = ({
-                                                           className,
-                                                           setEditPolygonId,
-                                                           setShowCreatePolygonModal,
                                                            setSelectedUserId
                                                          }) => {
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [viewingUser, setViewingUser] = useState<ActiveUser | null>(null);
   const { isConnected, subscribe } = useSocket();
-  const { jumpToLocation } = useMapContext();
 
   useEffect(() => {
     if (!isConnected) return;
@@ -80,29 +72,13 @@ const ActiveUsersList: React.FC<ActiveUsersListProps> = ({
     };
   }, [viewingUser, setSelectedUserId]);
 
-  const handleJumpAndOpenModal = (user: ActiveUser, e: React.MouseEvent) => {
-    e.stopPropagation();
-
-    if (!user.activity?.coordinates) return;
-
-    jumpToLocation(user.activity.coordinates, 13);
-
-    setTimeout(() => {
-      if (user.activity?.type === 'editing' && user.activity.polygonId) {
-        setEditPolygonId(user.activity.polygonId);
-      } else if (user.activity?.type === 'drawing') {
-        setShowCreatePolygonModal(true);
-      }
-    }, 200);
-  };
-
   const handleViewDrawing = (user: ActiveUser, e: React.MouseEvent) => {
     e.stopPropagation();
     setViewingUser(user);
   };
 
   return (
-    <ActiveUsersContainer className={className}>
+    <ActiveUsersContainer>
       <h4>Active Users ({activeUsers.length})</h4>
       <ActiveUsersListContainer>
         {activeUsers.length === 0 ? (
@@ -149,7 +125,6 @@ const ActiveUsersList: React.FC<ActiveUsersListProps> = ({
       {viewingUser && (
         <UserDrawingPopup
           user={viewingUser}
-          isOpen={true}
           onClose={() => setViewingUser(null)}
         />
       )}

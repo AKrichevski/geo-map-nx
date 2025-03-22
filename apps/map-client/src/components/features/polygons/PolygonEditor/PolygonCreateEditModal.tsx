@@ -13,14 +13,12 @@ import {
 } from '../../../styledComponents/polygonEditor/polygonCreateEditModalStyles';
 
 export interface PolygonCreateEditModalProps {
-  isOpen: boolean;
   onClose: () => void;
   editPolygonId?: number | null;
   initialCenter?: [number, number] | null;
 }
 
 export const PolygonCreateEditModal: React.FC<PolygonCreateEditModalProps> = ({
-                                                                                isOpen = false,
                                                                                 onClose,
                                                                                 editPolygonId = null,
                                                                                 initialCenter = null
@@ -37,53 +35,11 @@ export const PolygonCreateEditModal: React.FC<PolygonCreateEditModalProps> = ({
   const [estimatedAreaUnit, setEstimatedAreaUnit] = useState<MEASURE_NAMES>(MEASURE_NAMES.SQUARE_KILOMETER);
   const [isCalculatingArea, setIsCalculatingArea] = useState<boolean>(false);
   const initialCenterRef = useRef<[number, number] | null>(null);
-  const hasAddedInitialPoint = useRef<boolean>(false);
-  const modalInstanceId = useRef<string>(Math.random().toString(36).substring(2, 9));
-  const firstRender = useRef<boolean>(true);
 
-  const resetForm = useCallback(() => {
-    setName("");
-    setColor(colors.black);
-    setCoordinates([]);
-    setError(null);
-    setEstimatedAreaValue(null);
-    setEstimatedAreaUnit(MEASURE_NAMES.SQUARE_KILOMETER);
-    hasAddedInitialPoint.current = false;
-  }, []);
-
-  useEffect(() => {
-    if (isOpen) {
-      if (firstRender.current) {
-        firstRender.current = false;
-      } else {
-        modalInstanceId.current = Math.random().toString(36).substring(2, 9);
-        resetForm();
-
-        socketService.clearDrawing();
-      }
-    }
-  }, [isOpen, resetForm]);
-
-  const handleClose = useCallback(() => {
-    socketService.clearDrawing();
-
-    if (editPolygonId) {
-      socket?.emit('editing-polygon', {
-        polygonId: editPolygonId,
-        action: 'end'
-      });
-
-      socketService.setUserActivity(null);
-    }
-
-    resetForm();
-    hasAddedInitialPoint.current = false;
-    onClose();
-  }, [editPolygonId, onClose, resetForm, socket]);
+  console.log("render PolygonCreateEditModal ", editPolygonId ? "editing" : "creating")
 
   useEffect(() => {
     return () => {
-      if (isOpen) {
         socketService.clearDrawing();
 
         if (editPolygonId) {
@@ -94,24 +50,8 @@ export const PolygonCreateEditModal: React.FC<PolygonCreateEditModalProps> = ({
         }
 
         socketService.setUserActivity(null);
-      }
     };
-  }, [isOpen, editPolygonId, socket]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      socketService.clearDrawing();
-
-      if (editPolygonId) {
-        socket?.emit('editing-polygon', {
-          polygonId: editPolygonId,
-          action: 'end'
-        });
-      }
-
-      socketService.setUserActivity(null);
-    }
-  }, [isOpen, editPolygonId, socket]);
+  }, []);
 
   useEffect(() => {
     initialCenterRef.current = initialCenter;
@@ -119,8 +59,6 @@ export const PolygonCreateEditModal: React.FC<PolygonCreateEditModalProps> = ({
 
 
   useEffect(() => {
-    if (!isOpen) return;
-
     if (editPolygonId) {
       socket?.emit('editing-polygon', {
         polygonId: editPolygonId,
@@ -133,23 +71,10 @@ export const PolygonCreateEditModal: React.FC<PolygonCreateEditModalProps> = ({
         polygonId: editPolygonId,
         coordinates: coordinates.length > 0 ? coordinates[0] : undefined
       });
-    } else {
-      if (coordinates.length > 0) {
-        socketService.setUserActivity({
-          type: 'drawing',
-          coordinates: coordinates[coordinates.length - 1]
-        });
-      } else {
-        socketService.setUserActivity({
-          type: 'drawing'
-        });
-      }
     }
-  }, [isOpen, editPolygonId, socket, coordinates]);
+  }, [coordinates]);
 
   useEffect(() => {
-    if (!isOpen) return;
-
     if (editPolygonId) {
       const polygonToEdit = polygons.find((p) => p.id === editPolygonId);
       if (polygonToEdit) {
@@ -179,11 +104,9 @@ export const PolygonCreateEditModal: React.FC<PolygonCreateEditModalProps> = ({
           setCoordinates([]);
           setEstimatedAreaValue(null);
         }
-      } else {
-        resetForm();
       }
     }
-  }, [isOpen, editPolygonId, polygons, resetForm]);
+  }, [polygons]);
 
   useEffect(() => {
     if (coordinates.length >= 3 && socket) {
@@ -210,7 +133,7 @@ export const PolygonCreateEditModal: React.FC<PolygonCreateEditModalProps> = ({
       setEstimatedAreaValue(null);
       setIsCalculatingArea(false);
     }
-  }, [coordinates, socket]);
+  }, [coordinates]);
 
   const handleNewPoint = useCallback((newPoints: [number, number][]) => {
     if (Array.isArray(newPoints) && newPoints.length > 0) {
@@ -248,7 +171,7 @@ export const PolygonCreateEditModal: React.FC<PolygonCreateEditModalProps> = ({
         console.warn("Invalid point format:", point);
       }
     }
-  }, [editPolygonId, socket, coordinates]);
+  }, [coordinates]);
 
   const updatePoints = useCallback((newCoords: [number, number][]) => {
     if (!Array.isArray(newCoords)) {
@@ -284,7 +207,7 @@ export const PolygonCreateEditModal: React.FC<PolygonCreateEditModalProps> = ({
         isCompleted: false
       });
     }
-  }, [editPolygonId, socket]);
+  }, [editPolygonId]);
 
   const handleSave = useCallback(() => {
     setError(null);
@@ -306,7 +229,7 @@ export const PolygonCreateEditModal: React.FC<PolygonCreateEditModalProps> = ({
     } else {
       handleCreatePolygon(name, color, coordinates);
     }
-  }, [name, coordinates, editPolygonId, color]);
+  }, [name, coordinates, color]);
 
   const handleCreatePolygon = useCallback(async (name: string, color: string, coords: [number, number][]) => {
     if (!selectedLayerId) {
@@ -339,12 +262,12 @@ export const PolygonCreateEditModal: React.FC<PolygonCreateEditModalProps> = ({
       });
 
       setIsSaving(false);
-      handleClose();
+      onClose()
     } catch (error) {
       setIsSaving(false);
       setError(`Failed to create polygon: ${error instanceof Error ? error.message : String(error)}`);
     }
-  }, [createPolygon, selectedLayerId, estimatedAreaValue, estimatedAreaUnit, handleClose, socket]);
+  }, [createPolygon, selectedLayerId, estimatedAreaValue, estimatedAreaUnit]);
 
   const handleEditPolygon = useCallback(async (polygonId: number, name: string, color: string, coords: [number, number][]) => {
     if (!selectedLayerId) {
@@ -378,12 +301,12 @@ export const PolygonCreateEditModal: React.FC<PolygonCreateEditModalProps> = ({
       });
 
       setIsSaving(false);
-      handleClose();
+      onClose()
     } catch (error) {
       setIsSaving(false);
       setError(`Failed to update polygon: ${error instanceof Error ? error.message : String(error)}`);
     }
-  }, [updatePolygon, polygons, selectedLayerId, estimatedAreaValue, estimatedAreaUnit, handleClose]);
+  }, [updatePolygon, polygons, selectedLayerId, estimatedAreaValue, estimatedAreaUnit]);
 
   const getGeoJsonString = useCallback(() => {
     if (coordinates.length === 0) return "";
@@ -416,21 +339,20 @@ export const PolygonCreateEditModal: React.FC<PolygonCreateEditModalProps> = ({
     return JSON.stringify(geoJson, null, 2);
   }, [coordinates, name, color, estimatedAreaValue, estimatedAreaUnit]);
 
-  if (!isOpen) return null;
 
   if (!selectedLayerId) {
     return (
-      <DraggableModal isOpen={isOpen} isResizable={false}>
+      <DraggableModal isResizable={false}>
         <div style={{ padding: "20px", textAlign: "center" }}>
           <h3>Please select a layer first</h3>
-          <button onClick={handleClose} style={{ marginTop: "10px" }}>Close</button>
+          <button onClick={onClose} style={{ marginTop: "10px" }}>Close</button>
         </div>
       </DraggableModal>
     );
   }
 
   return (
-    <DraggableModal isOpen={isOpen} isResizable>
+    <DraggableModal isResizable>
       <PolygonModalHeader
         editPolygonId={editPolygonId}
         name={name}
@@ -439,13 +361,12 @@ export const PolygonCreateEditModal: React.FC<PolygonCreateEditModalProps> = ({
         onNameChange={setName}
         onColorChange={setColor}
         onSave={handleSave}
-        onClose={handleClose}
+        onClose={onClose}
       />
 
       <ModalContainer>
         <MapSection>
           <ManualPolygonMap
-            key={`map-${modalInstanceId.current}`}
             points={coordinates}
             onPointsChange={handleNewPoint}
             updatePoints={updatePoints}

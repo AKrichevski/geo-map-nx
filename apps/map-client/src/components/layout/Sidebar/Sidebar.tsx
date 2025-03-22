@@ -31,11 +31,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <SidebarToggle isOpen={isOpen} setIsOpen={setIsOpen} />
       <SidebarContainer $isOpen={isOpen}>
         <ActiveUsersList
-          setEditPolygonId={setEditPolygonId}
-          setShowCreatePolygonModal={setShowCreatePolygonModal}
           setSelectedUserId={setSelectedUserId}
         />
-
         <SidebarSeparator />
 
         <LayerSelector

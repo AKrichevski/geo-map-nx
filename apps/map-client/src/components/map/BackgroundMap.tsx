@@ -5,26 +5,22 @@ import { CanvasOverlay } from './Overlays/CanvasOverlay';
 import { MapTooltipLayer } from './Overlays/MapTooltipLayer';
 import { RealtimeDrawingOverlay } from './Overlays/RealtimeDrawingOverlay';
 import { useCanvasDrawingAllPolygons } from '../../hooks';
-import { GeolocateControl,  } from 'mapbox-gl';
 import socketService from '../../services/socket';
 import { MAPBOX_CONFIG } from '../../config/config';
 import { useMapContext } from '../../contexts/MapContext';
 import MapStyleSwitcher from '../styledComponents/MapStyleSwitcher';
 
 import {
-    ActiveUsersContainer,
-    ActiveUsersTitle, CancelButton, JumpButton, JumpInput, JumpInputContainer, JumpToPointButton,
+CancelButton, JumpButton, JumpInput, JumpInputContainer, JumpToPointButton,
     JumpToPointContainer,
     MapContainer, MouseCoordinatesDisplay
 } from '../styledComponents/backgroundMapStyles';
 
 interface BackgroundMapProps {
-    stopMouseTracking: boolean;
     selectedUserId?: string | null;
 }
 
 const BackgroundMap: React.FC<BackgroundMapProps> = ({
-                                                         stopMouseTracking = false,
                                                          selectedUserId = null
                                                      }) => {
     const { polygons } = useLayers();
@@ -158,24 +154,10 @@ const BackgroundMap: React.FC<BackgroundMapProps> = ({
                   polygons={polygons}
                 />
               )}
-
-              {/* Add Map Style Switcher */}
               <MapStyleSwitcher
                 currentStyle={mapStyle}
                 onStyleChange={setMapStyle}
               />
-
-              {/*{activeUsers.length > 0 && (*/}
-              {/*  <ActiveUsersContainer>*/}
-              {/*      <ActiveUsersTitle>*/}
-              {/*          Active Users ({activeUsers.length})*/}
-              {/*      </ActiveUsersTitle>*/}
-              {/*      {activeUsers.map((user, index) => (*/}
-              {/*        <div key={index}>{user}</div>*/}
-              {/*      ))}*/}
-              {/*  </ActiveUsersContainer>*/}
-              {/*)}*/}
-
               <JumpToPointContainer>
                   {showJumpInput ? (
                     <JumpInputContainer>

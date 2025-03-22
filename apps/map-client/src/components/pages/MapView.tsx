@@ -21,17 +21,11 @@ export default function MapView() {
   const { isAvailable, checking } = useApiHealth();
   const { subscribe } = useSocket();
   const socketInitialized = useRef(false);
-
-  useEffect(() => {
-    if (isAvailable && !socketInitialized.current) {
-      socketService.connect();
-      socketInitialized.current = true;
-    }
-  }, [isAvailable]);
+  console.log("render MapView")
 
   useEffect(() => {
     if (!subscribe) return;
-
+    console.log("render MapView subscribe", subscribe);
     const handleUsersUpdated = (users: any[]) => {
       const activeUser = users.find(user => user.activity && user.activity.coordinates);
       if (activeUser && activeUser.activity && activeUser.activity.coordinates) {
@@ -43,7 +37,9 @@ export default function MapView() {
   }, [subscribe]);
 
   useEffect(() => {
-    if (socketInitialized.current) return;
+    if (isAvailable && !socketInitialized.current) {
+      socketInitialized.current = true;
+    }
 
     const timeoutId = setTimeout(() => {
       const connected = socketService.isConnected();
@@ -56,9 +52,6 @@ export default function MapView() {
   }, []);
 
   const handleOpenCreateModal = useCallback((show: boolean) => {
-    if (!show) {
-      socketService.clearDrawing();
-    }
     createModalKey.current += 1;
     setShowCreatePolygonModal(show);
   }, []);
@@ -74,21 +67,6 @@ export default function MapView() {
 
     editModalKey.current += 1;
     setEditPolygonId(id);
-  }, [editPolygonId]);
-
-  useEffect(() => {
-    return () => {
-      socketService.clearDrawing();
-
-      if (editPolygonId !== null) {
-        socketService.getSocket()?.emit('editing-polygon', {
-          polygonId: editPolygonId,
-          action: 'end'
-        });
-      }
-
-      socketService.setUserActivity(null);
-    };
   }, [editPolygonId]);
 
   return (
@@ -114,25 +92,22 @@ export default function MapView() {
         setSelectedUserId={setSelectedUserId}
       />
 
-      <AddLayerModal
-        isOpen={showAddLayerModal}
+      {showAddLayerModal && <AddLayerModal
         onClose={() => setShowAddLayerModal(false)}
-      />
+      />}
 
-      <PolygonCreateEditModal
+      {showCreatePolygonModal && <PolygonCreateEditModal
         key={`create-${createModalKey.current}`}
-        isOpen={showCreatePolygonModal}
         onClose={() => handleOpenCreateModal(false)}
         initialCenter={activeUserCoordinates}
-      />
+      />}
 
-      <PolygonCreateEditModal
+      {!!editPolygonId && <PolygonCreateEditModal
         key={`edit-${editModalKey.current}`}
-        isOpen={!!editPolygonId}
         onClose={() => handleSetEditPolygonId(null)}
         editPolygonId={editPolygonId}
         initialCenter={activeUserCoordinates}
-      />
+      />}
 
       <SyncStatusIndicator />
     </MapProvider>

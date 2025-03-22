@@ -11,12 +11,10 @@ import {
 } from '../../styledComponents/addLayerModalStyles';
 
 interface AddLayerModalProps {
-  isOpen: boolean;
   onClose: () => void;
 }
 
 export const AddLayerModal: React.FC<AddLayerModalProps> = ({
-                                                              isOpen,
                                                               onClose,
                                                             }) => {
   const [layerName, setLayerName] = useState("");
@@ -45,11 +43,8 @@ export const AddLayerModal: React.FC<AddLayerModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
     <DraggableModal
-      isOpen={isOpen}
       isResizable={false}
       defaultWidth="400px"
       defaultHeight="auto"

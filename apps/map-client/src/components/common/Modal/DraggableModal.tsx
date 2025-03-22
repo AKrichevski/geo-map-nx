@@ -3,7 +3,6 @@ import { Rnd } from 'react-rnd';
 import colors from '../../../consts/colors';
 
 interface DraggableModalProps {
-    isOpen: boolean;
     children: React.ReactNode;
     isResizable?: boolean;
     defaultWidth?: string | number;
@@ -11,13 +10,11 @@ interface DraggableModalProps {
 }
 
 export const DraggableModal: React.FC<DraggableModalProps> = ({
-                                                                  isOpen,
                                                                   children,
                                                                   isResizable = false,
                                                                   defaultWidth = '50%',
                                                                   defaultHeight = '50%'
                                                               }) => {
-    if (!isOpen) return null;
 
     return (
         <div
