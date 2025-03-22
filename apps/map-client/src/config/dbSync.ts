@@ -61,25 +61,19 @@ export class DbSyncManager {
             return;
           }
 
-          if (initialData.layers && initialData.layers.length > 0) {
-            await this.syncLayers(initialData.layers);
-            console.log(`Synced ${initialData.layers.length} layers to IndexedDB`);
-          }
-
-          if (initialData.polygons && initialData.polygons.length > 0) {
-            await this.syncPolygons(initialData.polygons);
-            console.log(`Synced ${initialData.polygons.length} polygons to IndexedDB`);
+          if (initialData.layers?.length > 0 || initialData.polygons?.length > 0) {
+            await Promise.all([
+              this.syncLayers(initialData.layers),
+              this.syncPolygons(initialData.polygons)
+            ]);
           }
 
           this.initialSyncComplete = true;
-          console.log('Initial data sync completed');
         } catch (error) {
-          console.error('Error during initial sync:', error);
           throw error;
         }
       });
     } catch (error) {
-      console.error('Failed to perform initial sync:', error);
       throw error;
     }
   }

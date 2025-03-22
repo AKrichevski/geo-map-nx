@@ -1,5 +1,3 @@
-// src/config/config.ts
-
 export const MAP_STYLES = {
   STREETS: 'mapbox://styles/mapbox/streets-v11',
   SATELLITE: 'mapbox://styles/mapbox/satellite-v9',
@@ -18,14 +16,12 @@ export const MAPBOX_CONFIG = {
   DEFAULT_ZOOM: 2,
   STYLES: MAP_STYLES,
 
-  // Map control settings
   NAVIGATION_CONTROL: {
     POSITION: 'top-right' as 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left',
     SHOW_COMPASS: true,
     SHOW_ZOOM: true,
   },
 
-  // Map interaction settings
   INTERACTION: {
     SCROLL_ZOOM: true,
     DRAG_ROTATE: true,
@@ -35,10 +31,8 @@ export const MAPBOX_CONFIG = {
     TOUCH_ZOOM_ROTATE: true,
   },
 
-  // Map style change transition duration in milliseconds
   STYLE_TRANSITION_DURATION: 300,
 
-  // Geolocate control settings
   GEOLOCATE_CONTROL: {
     POSITION: 'top-right' as 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left',
     ENABLE_HIGH_ACCURACY: true,
@@ -46,14 +40,11 @@ export const MAPBOX_CONFIG = {
     SHOW_USER_LOCATION: true,
   },
 
-  // Bounds settings for fitting all polygons
   FIT_BOUNDS_PADDING: 50,
 
-  // Tile loading settings
   MAX_ZOOM: 20,
   MIN_ZOOM: 0,
 
-  // Default attribution control settings
   ATTRIBUTION_CONTROL: {
     COMPACT: true,
     POSITION: 'bottom-right' as 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left',

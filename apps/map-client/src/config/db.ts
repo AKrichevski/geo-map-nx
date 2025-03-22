@@ -42,7 +42,6 @@ class GeoMapDatabase extends Dexie {
 
     async createLayer(layer: Omit<LayerData, 'id'>): Promise<number> {
         try {
-            // Add timestamps if not provided
             const now = new Date().toISOString();
             const layerWithTimestamps = {
                 ...layer,

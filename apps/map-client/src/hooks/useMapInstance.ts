@@ -27,7 +27,6 @@ export const useMapInstance = ({
     const mapRef = useRef<Map | null>(null);
     const lastStyle = useRef<string>(style);
 
-    // Create the map instance
     useEffect(() => {
         if (!mapContainerRef.current || mapRef.current) return;
         if (!mapboxgl.accessToken) {
@@ -42,8 +41,6 @@ export const useMapInstance = ({
                 center: initialCenter,
                 zoom: initialZoom,
             });
-
-            // map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
             map.on("load", () => {
                 mapRef.current = map;
@@ -66,7 +63,6 @@ export const useMapInstance = ({
         }
     }, [initialCenter, initialZoom, style]);
 
-    // Handle style changes
     useEffect(() => {
         if (!mapRef.current || style === lastStyle.current) return;
 
@@ -104,11 +100,9 @@ export const useMapInstance = ({
         }
 
         try {
-            // Calculate center of the polygon
             let sumX = 0;
             let sumY = 0;
 
-            // Simple average of all coordinates for centroid
             for (const point of coordinates) {
                 if (Array.isArray(point) && point.length >= 2) {
                     sumX += point[0];
@@ -121,7 +115,6 @@ export const useMapInstance = ({
                 sumY / coordinates.length
             ];
 
-            // Calculate bounding box to determine appropriate zoom level
             const bounds = coordinates.reduce(
               (box, coord) => {
                   return {
@@ -134,13 +127,11 @@ export const useMapInstance = ({
               { minLng: Infinity, maxLng: -Infinity, minLat: Infinity, maxLat: -Infinity }
             );
 
-            // Calculate the appropriate zoom level based on the size of the polygon
             const lngDiff = bounds.maxLng - bounds.minLng;
             const latDiff = bounds.maxLat - bounds.minLat;
             const maxDiff = Math.max(lngDiff, latDiff);
 
-            // Estimate zoom level (smaller value = more zoomed out)
-            let zoomLevel = 14; // Default zoom level
+            let zoomLevel = 14;
 
             if (maxDiff > 5) zoomLevel = 2;
             else if (maxDiff > 1) zoomLevel = 4;

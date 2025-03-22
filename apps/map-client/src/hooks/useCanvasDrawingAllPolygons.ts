@@ -70,7 +70,7 @@ export function useCanvasDrawingAllPolygons() {
             ctx.closePath();
           }
 
-          ctx.fillStyle = `${polygon.color}66`; // 40% opacity
+          ctx.fillStyle = `${polygon.color}66`;
           ctx.fill();
           ctx.stroke();
         } catch (error) {

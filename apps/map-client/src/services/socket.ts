@@ -269,7 +269,6 @@ class SocketService {
       this.clearActivityDebounceTimer = setTimeout(() => {
         socket.emit('user-activity', { activity: null });
 
-        // Also end any drawing in progress if activity is being cleared
         if (this.drawingsInProgress.has(socket.id)) {
           socket.emit('drawing-ended', { userId: socket.id });
           this.drawingsInProgress.delete(socket.id);
@@ -278,7 +277,6 @@ class SocketService {
         this.clearActivityDebounceTimer = null;
       }, 300);
     } else {
-      // For non-null activities, emit directly but avoid duplicates
       if (JSON.stringify(this.currentActivity) !== JSON.stringify(activity)) {
         socket.emit('user-activity', { activity });
       }

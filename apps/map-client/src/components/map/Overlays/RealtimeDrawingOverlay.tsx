@@ -127,7 +127,6 @@ export const RealtimeDrawingOverlay = memo(({
             ctx.lineTo(point.x, point.y);
           }
 
-          // Close the polygon if completed
           if (drawing.isCompleted && drawing.points.length >= 3) {
             ctx.lineTo(firstPoint.x, firstPoint.y);
             ctx.fillStyle = `${drawingColor}33`;

@@ -1,4 +1,3 @@
-// src/hooks/useRealtimeDrawings.ts
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSocket } from './useSocket';
 import { DrawingData } from '@geo-map-app/types';
@@ -23,15 +22,11 @@ export function useRealtimeDrawings() {
 
   const { socket, isConnected, subscribe } = useSocket();
 
-  // Use a ref to store drawings to minimize re-renders
   const drawingsRef = useRef<Record<string, DrawingData>>({});
-
-  // Throttle state updates to reduce re-renders
   const throttleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastUpdateTimeRef = useRef<Record<string, number>>({});
   const initialLoadDone = useRef(false);
 
-  // Fetch initial drawings when connection is established
   useEffect(() => {
     if (isConnected && socket && !initialLoadDone.current) {
       setState(prev => ({ ...prev, isLoading: true }));
@@ -40,7 +35,6 @@ export function useRealtimeDrawings() {
     }
   }, [isConnected, socket]);
 
-  // Set up event listeners for drawing updates
   useEffect(() => {
     if (!isConnected) return;
 
@@ -57,14 +51,12 @@ export function useRealtimeDrawings() {
         clearTimeout(throttleTimerRef.current);
       }
 
-      // Throttle updates to 60fps equivalent (about 16ms)
       throttleTimerRef.current = setTimeout(updateState, 16);
     };
 
     const handleDrawingUpdate = (data: DrawingData) => {
       if (!data || !data.userId) return;
 
-      // Skip if this is an older update than what we already have
       const timestamp = data.timestamp || Date.now();
       const lastUpdate = lastUpdateTimeRef.current[data.userId] || 0;
 
@@ -72,39 +64,30 @@ export function useRealtimeDrawings() {
         return;
       }
 
-      // Update the last update time
       lastUpdateTimeRef.current[data.userId] = timestamp;
 
-      // Update the ref immediately for performance
       drawingsRef.current = {
         ...drawingsRef.current,
         [data.userId]: data
       };
 
-      // Throttled state update
       throttledUpdateState();
     };
 
     const handleDrawingEnded = (data: { userId: string }) => {
       if (!data || !data.userId) return;
 
-      // Remove drawing from ref
       const newDrawings = { ...drawingsRef.current };
       delete newDrawings[data.userId];
       drawingsRef.current = newDrawings;
-
-      // Also clean up the update time entry
       delete lastUpdateTimeRef.current[data.userId];
 
-      // Update state
       throttledUpdateState();
     };
 
-    // Subscribe to events
     const drawingUpdateUnsubscribe = subscribe<DrawingData>('drawing-update', handleDrawingUpdate);
     const drawingEndedUnsubscribe = subscribe<{ userId: string }>('drawing-ended', handleDrawingEnded);
 
-    // Request current drawings on initial load (if not done already)
     if (!initialLoadDone.current && socket) {
       socket.emit('get-current-drawings');
       initialLoadDone.current = true;
